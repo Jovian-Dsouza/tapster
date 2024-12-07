@@ -1,10 +1,54 @@
+'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Upload, BarChart, Users } from 'lucide-react'
 import Link from "next/link"
+import { useEffect, useState } from "react";
+import { useWallet } from "@suiet/wallet-kit";
+
+interface DashboardStats {
+    totalDatasets: number
+    totalDatasetsChange: number
+    labellingProgress: number
+    labellingProgressChange: number
+    activeLabelersCount: number
+    activeLabelersChange: number
+    recentUploads: {
+      id: string
+      title: string
+      createdAt: string
+      _count: { images: number }
+    }[]
+  }
 
 export default function DashboardPage() {
+
+
+    const [stats, setStats] = useState<DashboardStats | null>(null)
+    const wallet = useWallet()
+
+    useEffect(() => {
+        async function fetchStats() {
+            if (wallet.connected && wallet.account?.address) {
+                try {
+                    const response = await fetch(`/api/job/get_stats?address=${wallet.account.address}`)
+                    if (!response.ok) throw new Error('Failed to fetch stats')
+                    const data = await response.json()
+                    setStats(data)
+                } catch (error) {
+                    console.error('Error fetching dashboard stats:', error)
+                }
+            }
+        }
+
+        fetchStats()
+    }, [wallet.connected, wallet.account?.address])
+
+    if (!stats) {
+        return <div className="py-8">Loading...</div>
+    }
+
     return (
         <div className="p-6 py-8 space-y-6">
             <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -15,8 +59,10 @@ export default function DashboardPage() {
                         <Upload className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">25</div>
-                        <p className="text-xs text-muted-foreground">+2 from last month</p>
+                    <div className="text-2xl font-bold">{stats.totalDatasets}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {stats.totalDatasetsChange > 0 ? '+' : ''}{stats.totalDatasetsChange} from last week
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -25,8 +71,11 @@ export default function DashboardPage() {
                         <BarChart className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">68%</div>
-                        <Progress value={68} className="mt-2" />
+                    <div className="text-2xl font-bold">{stats.labellingProgress}%</div>
+                        <Progress value={stats.labellingProgress} className="mt-2" />
+                        <p className="text-xs text-muted-foreground">
+                            {stats.labellingProgressChange > 0 ? '+' : ''}{stats.labellingProgressChange}% from last week
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -35,8 +84,10 @@ export default function DashboardPage() {
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">573</div>
-                        <p className="text-xs text-muted-foreground">+18 from last week</p>
+                    <div className="text-2xl font-bold">{stats.activeLabelersCount}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {stats.activeLabelersChange > 0 ? '+' : ''}{stats.activeLabelersChange} from last week
+                        </p>
                     </CardContent>
                 </Card>
             </div>
@@ -47,16 +98,12 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {[
-                            { name: "Product Images Dataset", date: "2024-03-15", items: 1500 },
-                            { name: "Customer Reviews Dataset", date: "2024-03-12", items: 5000 },
-                            { name: "Inventory Images Dataset", date: "2024-03-10", items: 2000 },
-                        ].map((dataset) => (
-                            <div key={dataset.name} className="flex items-center">
+                        {stats.recentUploads.map((job) => (
+                            <div key={job.id} className="flex items-center">
                                 <div className="ml-4 space-y-1">
-                                    <p className="text-sm font-medium leading-none">{dataset.name}</p>
+                                    <p className="text-sm font-medium leading-none">{job.title}</p>
                                     <p className="text-sm text-muted-foreground">
-                                        Uploaded on {dataset.date} • {dataset.items} items
+                                        Uploaded on {new Date(job.createdAt).toLocaleDateString()} • {job._count.images} items
                                     </p>
                                 </div>
                             </div>
