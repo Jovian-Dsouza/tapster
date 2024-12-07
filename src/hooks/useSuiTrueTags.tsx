@@ -4,9 +4,9 @@ import { MIST_PER_SUI } from '@mysten/sui/utils';
 import { useMemo } from 'react';
 import { useWallet } from '@suiet/wallet-kit';
 
-const PACKAGE_ID = '0x26b68d27055bb801eb6a2acb8b16b7d6a39e03f34e3376f80c8fa9f0e2f36055';
-const REGISTRY_ID = '0x2572b8f8023f2b97054fc3651dbcec666b52ce7b92c5d3b1a6401b4d327144d3';
-const VAULT_ID = '0x471aafa23b9a30f9f2f9d447916f9cf3715ad08c6c3eff437472aac7d95cef3c';
+const PACKAGE_ID = '0xc54443d17051c610cf4958ce29af293e695a3f672c222e4a452a93804e64349a';
+const REGISTRY_ID = '0x3bf2bc2cc9b5c214d7f33ea9bfc63e959455086946dba5bdea295fbc4a337f7a';
+const VAULT_ID = '0x07fd0d01b0a2fc2d95e724bd2e86374d65131abc96cee39af876c591b6989dd2';
 
 // interface UseSuiTrueTagsProps {
 //     client: SuiClient;
@@ -25,10 +25,15 @@ export function useSuiTrueTags(
 
     async function executeTransaction(txb: Transaction) {
         console.log('executeTransaction');
-        if (!wallet.connected) return;
+        console.log("wallet connected", wallet.connected)
+
+        if (!wallet.connected){
+            await wallet.select('Suiet');
+        }
 
         try {
             // call the wallet to sign and execute the transaction
+            console.log("signing and executing transaction", txb)
             const res = await wallet.signAndExecuteTransaction({
                 transaction: txb,
             });
@@ -90,8 +95,32 @@ export function useSuiTrueTags(
         return result;
     }, [client, packageId, vaultId]);
 
+     const submitAnnotation = useMemo(() => async (
+        taskId: number,
+        data: string
+    ) => {
+        const tx = new Transaction();
+
+        tx.moveCall({
+            target: `${packageId}::true_tag::submit_annotation`,
+            arguments: [
+                tx.object(vaultId),
+                tx.object(registryId),
+                tx.pure.u64(taskId),
+                tx.pure.string(data)
+            ],
+        });
+
+        tx.setGasBudget(100000000);
+
+        const result = await executeTransaction(tx);
+        return result;
+    }, [client, packageId, vaultId, registryId]);
+
+
     return {
         createTask,
+        submitAnnotation
     };
 }
 
