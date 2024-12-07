@@ -2,12 +2,6 @@
 import Link from 'next/link';
 import MobileNavbar from '@/components/mobile-navbar';
 import { cn } from '@/lib/utils';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from './ui/dropdown-menu';
 import { ConnectButton, useWallet } from '@suiet/wallet-kit';
 import { useEffect } from 'react';
 
@@ -15,11 +9,22 @@ export default function Navbar() {
 
     const wallet = useWallet()
 
+    const createAccount = async (walletAddress:string) => {
+        const res = await fetch('/api/user/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({walletAddress})
+        })
+        const data = await res.json()
+        console.log('data:', data)
+    }
+
     useEffect(() => {
-        if (!wallet.connected) return;
-        console.log('connected wallet name: ', wallet.name)
-        console.log('account address: ', wallet.account?.address)
-        console.log('account publicKey: ', wallet.account?.publicKey)
+        if (wallet.connected && wallet.account?.address) {
+            createAccount(wallet.account?.address)
+        };
     }, [wallet.connected])
 
     return (
