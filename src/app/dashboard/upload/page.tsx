@@ -1,11 +1,13 @@
 'use client';
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FormControl, FormField, FormItem, Form, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useSuiTrueTags } from "@/hooks/useSuiTrueTags";
 import { zodResolver } from '@hookform/resolvers/zod';
+import { SuiClient } from "@mysten/sui/client";
 import { useWallet } from "@suiet/wallet-kit";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -19,9 +21,16 @@ const formSchema = z.object({
   reward: z.string(),
 })
 
+const client = new SuiClient({ 
+        url: process.env.NEXT_PUBLIC_SUI_RPC_URL || 'https://fullnode.testnet.sui.io:443' 
+});
+
+const FIXED_PAYMENT = 0.001;
+  
 export default function UploadPage() {
   const wallet = useWallet();
   const [isLoading, setIsLoading] = useState(false);
+  const { createTask } = useSuiTrueTags(client);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -34,6 +43,7 @@ export default function UploadPage() {
   })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('values:', values);
     try{
       setIsLoading(true);
       const files = values.data as FileList;
@@ -66,6 +76,15 @@ export default function UploadPage() {
         }
       }
       if (wallet.account?.address) {
+        const id = parseInt(crypto.randomUUID().slice(0, 8), 16);
+        const txn = await createTask(
+          id, //id
+          values.name, //name
+          FIXED_PAYMENT, //reward per annotation
+          Math.floor(Number(values.reward) / FIXED_PAYMENT), //required annotations
+        );
+        console.log('Transaction executed:', txn);
+
         const res = await fetch('/api/job/create', {
           method: 'POST',
           headers: {
@@ -91,7 +110,7 @@ export default function UploadPage() {
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle>Dataset Information</CardTitle>
-          <CardDescription>Provide details about the dataset you're uploading.</CardDescription>
+          <CardDescription>Provide details about the dataset you re uploading.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
 
@@ -174,7 +193,7 @@ export default function UploadPage() {
                   )
                 }}
               />
-              <Button className="w-full">
+              <Button className="w-full" >
                 {isLoading ? 'Uploading...' : 'Upload'}
               </Button>
             </form>
