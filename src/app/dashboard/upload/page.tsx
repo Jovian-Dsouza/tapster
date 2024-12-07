@@ -62,8 +62,11 @@ export default function UploadPage() {
           });
   
           const result = await response.json();
-          console.log(result);
-          blobs.push(result.alreadyCertified.blobId);
+          if(result.alreadyCertified.blobId){
+            blobs.push(result.alreadyCertified.blobId);
+          }else if(result.newlyCreated.blobObject.blobId){
+            blobs.push(result.newlyCreated.blobObject.blobId);
+          }
   
           if (!response.ok) {
             throw new Error(`Upload failed for ${file.name}`);
