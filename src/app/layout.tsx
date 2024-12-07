@@ -32,7 +32,7 @@ export default function RootLayout({
       <body className="h-screen">
         <WalletProviderWrapper>
           <Navbar />
-          <main className="h-full pt-[70px]">{children}</main>
+          {children}
         </WalletProviderWrapper>
       </body>
     </html>
