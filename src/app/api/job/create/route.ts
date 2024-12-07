@@ -4,7 +4,7 @@ import prisma from '@/lib/db'
 export async function POST(req: Request) {
   try {
     const { publisher,name, type, reward, data } = await req.json();
-
+    const floatReward = parseFloat(reward)
     const creator = await prisma.user.findFirst({
       where: {
         walletAddress: publisher
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         data: {
           title:name,
           description:'TODO',
-          reward,
+          reward:floatReward,
           creator: { connect: { id: creator.id } },
           images: {
             create: data.map((url:any) => ({ url }))
