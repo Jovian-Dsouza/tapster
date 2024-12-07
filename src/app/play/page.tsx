@@ -65,24 +65,6 @@ export default function PlayPage() {
     }
   }
 
-  // const handleCreateAttestation = async (jobId: string, imageId: string, otherImageId: string) => {
-  //   const data = {
-  //     jobId: jobId,
-  //     imageId: imageId,
-  //     otherImageId: otherImageId
-  //   }
-  //   console.log("handleCreateAttestation", data)
-  //   try {
-  //     if(!wallet.account?.address) return;
-  //     const annotationData = JSON.stringify(data);
-  //     const taskId = 1;
-  //     const result = await submitAnnotation(taskId, annotationData);
-  //     console.log("submitAnnotation result", result)
-  //   } catch (error) {
-  //     console.log(error)
-  //   }
-  // }
-
   const handleCreateAttestation = async (jobId: string, imageId: string, otherImageId: string) => {
     const data = {
       jobId: jobId,
@@ -90,16 +72,28 @@ export default function PlayPage() {
       otherImageId: otherImageId
     }
     console.log("handleCreateAttestation", data)
+
+    let attestationUID = "";
     try {
-      const attestationUID = await createAttestation({
-        jobId: jobId,
-        winnerId: imageId,
-        loserId: otherImageId
-      });
+      if(process.env.NEXT_PUBLIC_ATTESTATION_TYPE === 'sui'){
+        if(!wallet.account?.address) return;
+          const annotationData = JSON.stringify(data);
+          const taskId = 1;
+          attestationUID = await submitAnnotation(taskId, annotationData);
+      }
+
+      else if(process.env.NEXT_PUBLIC_ATTESTATION_TYPE === 'ethereum'){
+        attestationUID = await createAttestation({
+          jobId: jobId,
+          winnerId: imageId,
+          loserId: otherImageId
+        });
+      }
       console.log("New attestation UID:", attestationUID);
     } catch (error) {
       console.error("Failed to create attestation:", error);
     }
+    return attestationUID;
   }
 
   const handleLike = async (imageId: string) => {
