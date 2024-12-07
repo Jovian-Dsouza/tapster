@@ -2,8 +2,15 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 
 export async function POST(req: Request) {
+
   try {
-    const { userId, labellingJobId, imageId } = await req.json()
+
+    const { walletAddress, labellingJobId, imageId } = await req.json()
+    const user = await prisma.user.findUnique({
+      where: { walletAddress }
+    })
+    const userId = user?.id;
+
 
     if (!userId || !labellingJobId || !imageId) {
       return NextResponse.json({ error: 'User ID, labelling job ID, and image ID are required' }, { status: 400 })

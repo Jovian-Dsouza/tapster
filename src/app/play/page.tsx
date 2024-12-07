@@ -8,7 +8,7 @@ import { useState, useCallback, useEffect } from "react"
 
 interface ImagePair {
   id: string
-  images: { id: string; url: string }[]
+  images: { id: string; url: string,labellingJobId:string }[]
 }
 
 export default function PlayPage() {
@@ -50,7 +50,7 @@ export default function PlayPage() {
         id: image.id,
         url: image.url,
       }))
-      setImagePairs([...imagePairs, { id: Date.now().toString(), images: imageUrls }])
+      setImagePairs([...imagePairs, { id: Date.now().toString(), images: data.images }])
     } catch (err) {
       setError('Failed to load images. Please try again.')
     } finally {
@@ -58,31 +58,30 @@ export default function PlayPage() {
     }
   }
 
-  console.log(imagePairs)
 
   const handleLike = useCallback(async (imageId: string) => {
     setIsLiking(true)
     try {
       const currentPair = imagePairs[currentIndex]
+      console.log(currentPair)
       const likedImage = currentPair.images.find(img => img.id === imageId)
       if (!likedImage) throw new Error('Image not found')
-      const response = await fetch('/api/submit_result', {
+      if(!wallet.account?.address) return;
+      const response = await fetch('/api/user/submit_job', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          pairId: currentPair.id,
-          likedImageId: imageId,
+          walletAddress:wallet.account?.address,
+          labellingJobId: currentPair.images[0].labellingJobId,
+          imageId: imageId,
         }),
       })
-
       if (!response.ok) {
         throw new Error('Failed to submit result')
       }
-
       setLikedStates(prev => ({ ...prev, [imageId]: true }))
-
       if (currentIndex === imagePairs.length - 1) {
         if (wallet.account?.address) {
           await fetchImages(wallet.account.address)
@@ -122,7 +121,7 @@ export default function PlayPage() {
     if (wallet.account?.address && imagePairs.length === 0) {
       fetchImages(wallet.account.address)
     }
-  }, [wallet.account?.address, fetchImages, imagePairs.length])
+  }, [wallet.account?.address, imagePairs.length])
 
   useEffect(() => {
     setCurrentIndex(0)
