@@ -11,14 +11,21 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model EnterpriseOrg {
-  id            String        @id @default(cuid())
-  name          String
-  walletAddress String        @unique
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+model User {
+  id                 String     @id @default(cuid())
+  walletAddress      String     @unique
+  tasksCompleted     Int        @default(0)
+  claimableRewards   Float      @default(0)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  // These are the labellings completed by the users.
+  labellings         Labelling[]
+
+  // These are the jobs created by the users.
   labellingJobs LabellingJob[]
 }
 
@@ -29,7 +36,7 @@ model LabellingJob {
   reward           Float
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
-  creator          EnterpriseOrg @relation(fields: [creatorId], references: [id])
+  creator          User @relation(fields: [creatorId], references: [id])
   creatorId        String
   labelledByCount  Int        @default(0)
   images           Image[]
@@ -43,16 +50,6 @@ model Image {
   labellingJobId String
   createdAt      DateTime     @default(now())
   labellings     Labelling[]
-}
-
-model User {
-  id                 String     @id @default(cuid())
-  walletAddress      String     @unique
-  tasksCompleted     Int        @default(0)
-  claimableRewards   Float      @default(0)
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
-  labellings         Labelling[]
 }
 
 model Labelling {
