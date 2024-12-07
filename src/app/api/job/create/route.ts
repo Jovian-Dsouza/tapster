@@ -1,27 +1,19 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import JSZip from 'jszip'
+import axios from 'axios'
 
 export async function POST(req: Request) {
   try {
-    const { title, description, reward, creatorId, imageUrls } = await req.json()
+    const { publisher,name, type, reward, data } = await req.json();
 
-    if (!title || !reward || !creatorId || !imageUrls || !Array.isArray(imageUrls)) {
-      return NextResponse.json({ error: 'Invalid input data' }, { status: 400 })
-    }
+    console.log('walletAddress:', publisher)
+    console.log('name:', name)
+    console.log('type:', type)
+    console.log('reward:', reward)
+    console.log('data:', data)
 
-    const labellingJob = await prisma.labellingJob.create({
-      data: {
-        title,
-        description,
-        reward,
-        creator: { connect: { id: creatorId } },
-        images: {
-          create: imageUrls.map(url => ({ url }))
-        }
-      }
-    })
-
-    return NextResponse.json(labellingJob)
+    return NextResponse.json({result:"labellingJob"})
   } catch (error) {
     console.error('Error creating labelling job:', error)
     return NextResponse.json({ error: 'Error creating labelling job' }, { status: 500 })

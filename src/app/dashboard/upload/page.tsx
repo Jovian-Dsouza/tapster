@@ -1,11 +1,13 @@
 'use client';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { FormControl, FormField, FormItem ,Form} from "@/components/ui/form";
+import { FormControl, FormField, FormItem, Form, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useWallet } from "@suiet/wallet-kit";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -13,11 +15,13 @@ import { z } from "zod";
 const formSchema = z.object({
   name: z.string(),
   type: z.string(),
-  data: z.custom(),
-  reward: z.number(),
+  data: z.any().refine((files) => files?.length > 0, "At least one image is required."),
+  reward: z.string(),
 })
 
 export default function UploadPage() {
+  const wallet = useWallet();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -25,33 +29,60 @@ export default function UploadPage() {
       name: '',
       type: '',
       data: '',
-      reward: 0,
+      reward: '',
     }
   })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-
-    const formData = new FormData()
-    formData.append('name', values.name)
-    formData.append('type', values.type)
-    formData.append('reward', values.reward.toString())
-    formData.append('zipFile', values.data)
-
-    try {
-      const response = await fetch('/job/create', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error('Upload failed')
+    try{
+      setIsLoading(true);
+      const files = values.data as FileList;
+  
+      const blobs = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const blob = new Blob([file], { type: file.type });
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_PUBLISHER}/v1/store?epochs=1`, {
+            method: 'PUT',
+            body: blob,
+            headers: {
+              'Content-Type': file.type,
+            },
+          });
+  
+          const result = await response.json();
+          blobs.push(result.alreadyCertified.blobId);
+  
+          if (!response.ok) {
+            throw new Error(`Upload failed for ${file.name}`);
+          }
+  
+          console.log(`Uploaded ${file.name} successfully`);
+        } catch (error) {
+          console.error(`Upload error for ${file.name}:`, error);
+          return;
+        }
       }
-
-      const result = await response.json()
-    } catch (error) {
-      console.error('Upload error:', error)
+      if (wallet.account?.address) {
+        const res = await fetch('/api/job/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: values.name, type: values.type, data: blobs, reward: values.reward, publisher: wallet.account?.address })
+        })
+        const data = await res.json()
+        console.log('data:', data);
+      }
+    }
+    catch (error) {
+      console.error('Error uploading dataset:', error)
+    }finally{
+      setIsLoading(false);
     }
   }
+
 
   return (
     <div className="p-6 space-y-6">
@@ -114,7 +145,13 @@ export default function UploadPage() {
                     <FormItem className="space-y-2">
                       <Label htmlFor="data">Dataset File</Label>
                       <FormControl>
-                        <Input id="data" type="file" {...field} />
+                        <Input
+                          id="images"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => field.onChange(e.target.files)}
+                        />
                       </FormControl>
                     </FormItem>
                   )
@@ -129,13 +166,16 @@ export default function UploadPage() {
                     <FormItem className="space-y-2">
                       <Label htmlFor="reward">Reward</Label>
                       <FormControl>
-                        <Input id="reward" type="number" placeholder="Enter reward amount" {...field} />
+                        <Input id="reward" placeholder="Enter reward amount" {...field} />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )
                 }}
               />
-              <Button className="w-full">Upload Dataset</Button>
+              <Button className="w-full">
+                {isLoading ? 'Uploading...' : 'Upload'}
+              </Button>
             </form>
           </Form>
         </CardContent>
