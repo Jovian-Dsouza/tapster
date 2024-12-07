@@ -1,5 +1,7 @@
 'use client'
 
+import { useSuiTrueTags } from "@/hooks/useSuiTrueTags"
+import { SuiClient } from "@mysten/sui/client"
 import { useWallet } from "@suiet/wallet-kit"
 import { motion, AnimatePresence, PanInfo } from "framer-motion"
 import { Heart, Star, Film, ChevronDown, ChevronUp } from 'lucide-react'
@@ -12,6 +14,10 @@ interface ImagePair {
   images: { id: string; url: string }[]
 }
 
+const client = new SuiClient({ 
+        url: process.env.NEXT_PUBLIC_SUI_RPC_URL || 'https://fullnode.testnet.sui.io:443' 
+});
+
 export default function PlayPage() {
   const wallet = useWallet();
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('images')
@@ -21,6 +27,7 @@ export default function PlayPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0)
+  const { submitAnnotation } = useSuiTrueTags(client);
 
   const mainCategories = [
     { name: 'images', label: 'Images', icon: <Star className="w-5 h-5" /> },
@@ -56,6 +63,24 @@ export default function PlayPage() {
     }
   }
 
+  const handleCreateAttestation = async (jobId: string, imageId: string, otherImageId: string) => {
+    const data = {
+      jobId: jobId,
+      imageId: imageId,
+      otherImageId: otherImageId
+    }
+    console.log("handleCreateAttestation", data)
+    try {
+      if(!wallet.account?.address) return;
+      const annotationData = JSON.stringify(data);
+      const taskId = 1;
+      const result = await submitAnnotation(taskId, annotationData);
+      console.log("submitAnnotation result", result)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   const handleLike = async (imageId: string) => {
     setIsLiking(true)
     try {
@@ -65,6 +90,9 @@ export default function PlayPage() {
       if (!likedImage || !otherImage) throw new Error('Image not found')
       if (!wallet.account?.address) return;
       console.log(imagePairs.jobId, imageId, otherImage.id)
+
+      await handleCreateAttestation(imagePairs.jobId, imageId, otherImage.id)
+
       const response = await fetch('/api/user/submit_job', {
         method: 'POST',
         headers: {

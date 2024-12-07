@@ -79,7 +79,7 @@ export default function UploadPage() {
         }
       }
       if (wallet.account?.address) {
-        const id = parseInt(crypto.randomUUID().slice(0, 8), 16);
+        const id = 1; //parseInt(crypto.randomUUID().slice(0, 8), 16);
         const txn = await createTask(
           id, //id
           values.name, //name
