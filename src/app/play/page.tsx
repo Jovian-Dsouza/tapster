@@ -1,165 +1,267 @@
 'use client'
+
+import { useWallet } from "@suiet/wallet-kit"
 import { motion, AnimatePresence, PanInfo } from "framer-motion"
-import { Heart, Star, Coins, ChevronDown, ChevronUp } from 'lucide-react'
+import { Heart, Star, Film, ChevronDown, ChevronUp } from 'lucide-react'
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useCallback, useEffect } from "react"
+
+interface ImagePair {
+  id: string
+  images: { id: string; url: string }[]
+}
 
 export default function PlayPage() {
+  const wallet = useWallet();
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('images')
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('Beauty')
-  const [isLiking, setIsLiking] = useState(false);
-  const [currentPairIndex, setCurrentPairIndex] = useState(0)
-  const [likedStates, setLikedStates] = useState<Record<number, boolean>>({})
+  const [likedStates, setLikedStates] = useState<Record<string, boolean>>({})
+  const [isLiking, setIsLiking] = useState(false)
+  const [imagePairs, setImagePairs] = useState<ImagePair[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const mainCategories = [
-    { name: 'images', label: 'Images', icon: <Star /> },
-    { name: 'shorts', label: 'Shorts', icon: <Coins /> },
+    { name: 'images', label: 'Images', icon: <Star className="w-5 h-5" /> },
+    { name: 'shorts', label: 'Shorts', icon: <Film className="w-5 h-5" /> },
   ]
-  
+
   const swipeConfidenceThreshold = 10000
   const swipePower = (offset: number, velocity: number) => {
     return Math.abs(offset) * velocity
   }
 
-  
-  const imagePairs = [
-    [
-      { id: 1, url: 'https://placehold.co/600x400.png' },
-      { id: 2, url: 'https://placehold.co/600x400.png' }
-    ],
-    [
-      { id: 3, url: 'https://placehold.co/600x400.png' },
-      { id: 4, url: 'https://placehold.co/600x400.png' }
-    ],
-    // Add more pairs
-  ]
   const videos = [
-    { id: 1, url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
-    { id: 2, url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4' },
-    // Add more videos
+    { id: 'v1', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+    { id: 'v2', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+    { id: 'v3', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
   ]
 
-  const handleLike = async (imageId:string) => {
-    setIsLiking(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    setCurrentIndex(prev => prev + 1)
-    setIsLiking(false)
-  }
-
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const swipe = swipePower(info.offset.y, info.velocity.y)
-    
-    if (selectedMainCategory === 'shorts') {
-      if (swipe < -swipeConfidenceThreshold) {
-        setCurrentIndex(prev => prev + 1) // Swipe up for next
-      } else if (swipe > swipeConfidenceThreshold) {
-        setCurrentIndex(prev => Math.max(0, prev - 1)) // Swipe down for previous
+  const fetchImages = async (walletAddress: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/user/get_job_set?walletAddress=${walletAddress}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch images')
       }
+      const data = await response.json()
+      const imageUrls = data.images.map((image: { id: string; url: string }) => ({
+        id: image.id,
+        url: image.url,
+      }))
+      setImagePairs([...imagePairs, { id: Date.now().toString(), images: imageUrls }])
+    } catch (err) {
+      setError('Failed to load images. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
+  console.log(imagePairs)
+
+  const handleLike = useCallback(async (imageId: string) => {
+    setIsLiking(true)
+    try {
+      const currentPair = imagePairs[currentIndex]
+      const likedImage = currentPair.images.find(img => img.id === imageId)
+      if (!likedImage) throw new Error('Image not found')
+      const response = await fetch('/api/submit_result', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pairId: currentPair.id,
+          likedImageId: imageId,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit result')
+      }
+
+      setLikedStates(prev => ({ ...prev, [imageId]: true }))
+
+      if (currentIndex === imagePairs.length - 1) {
+        if (wallet.account?.address) {
+          await fetchImages(wallet.account.address)
+        }
+      }
+      setCurrentIndex(prev => (prev + 1) % imagePairs.length)
+    } catch (err) {
+      setError('Failed to submit like. Please try again.')
+    } finally {
+      setIsLiking(false)
+    }
+  }, [currentIndex, imagePairs, fetchImages])
+
+  const handleNext = useCallback(() => {
+    if (currentIndex === imagePairs.length - 1) {
+      if (wallet.account?.address) {
+        fetchImages(wallet.account.address)
+      }
+    }
+    setCurrentIndex(prev => (prev + 1) % imagePairs.length)
+  }, [currentIndex, imagePairs.length, fetchImages])
+
+  const handlePrevious = useCallback(() => {
+    setCurrentIndex(prev => (prev - 1 + imagePairs.length) % imagePairs.length)
+  }, [imagePairs.length])
+
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const swipe = swipePower(info.offset.y, info.velocity.y)
+    if (swipe < -swipeConfidenceThreshold) {
+      handleNext()
+    } else if (swipe > swipeConfidenceThreshold) {
+      handlePrevious()
+    }
+  }
+
+  useEffect(() => {
+    if (wallet.account?.address && imagePairs.length === 0) {
+      fetchImages(wallet.account.address)
+    }
+  }, [wallet.account?.address, fetchImages, imagePairs.length])
+
+  useEffect(() => {
+    setCurrentIndex(0)
+  }, [selectedMainCategory])
+
+  if (isLoading && imagePairs.length === 0) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>
+  }
+
+  if (error && imagePairs.length === 0) {
+    return <div className="h-screen flex items-center justify-center text-red-500">{error}</div>
+  }
+
   return (
-    <div className="px-4 h-screen relative bg-white pt-[120px] flex flex-col items-center max-w-md mx-auto rounded-lg overflow-hidden">
-      <AnimatePresence mode="wait">
-        {selectedMainCategory === 'images' ? (
-        <motion.div
-          key={currentPairIndex}
-          className="flex gap-4 w-full px-4 justify-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-        >
-          {imagePairs[currentPairIndex]?.map((image, index) => (
+    <div className="h-screen pt-[90px] bg-gradient-to-b from-purple-100 to-pink-100 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden">
+        <AnimatePresence mode="wait">
+          {selectedMainCategory === 'images' ? (
             <motion.div
-              key={image.id}
-              className="flex-1 relative"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: index * 0.2 }}
+              key="images"
+              className="flex gap-4 px-6 pb-6 pt-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
             >
-              <motion.div
-                className={`rounded-3xl p-0.5 bg-gradient-to-b ${
-                  index === 0 ? 'from-blue-400 to-green-400' : 'from-pink-400 to-red-400'
-                } shadow-lg`}
-                whileHover={{ scale: 1.03 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <div className="relative rounded-[22px] overflow-hidden w-full aspect-[3/4] bg-gray-100">
-                  <Image
-                    src={image.url}
-                    alt={`Image ${image.id}`}
-                    fill
-                    className="object-cover"
-                  />
-                  <motion.button
-                    className="absolute bottom-4 right-4 p-3 bg-white rounded-full"
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleLike("1")}
+              
+              {imagePairs[currentIndex]?.images.map((image, index) => {
+                console.log()
+                return (
+                  <motion.div
+                    key={image.id}
+                    className="flex-1 relative"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: index * 0.2 }}
                   >
-                    <Heart className={`w-6 h-6 ${
-                      likedStates[image.id] ? 'text-red-500 fill-red-500' : 'text-gray-600'
-                    }`} />
+                    <motion.div
+                      className={`rounded-2xl p-0.5 bg-gradient-to-b ${index === 0 ? 'from-blue-400 to-green-400' : 'from-pink-400 to-red-400'
+                        } shadow-lg`}
+                      whileHover={{ scale: 1.03 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <div className="relative rounded-xl overflow-hidden w-full aspect-[3/4] bg-gray-100">
+                        <Image
+                          src={`${process.env.NEXT_PUBLIC_AGGREGATOR}/v1/${image.url}`}
+                          alt={`Image ${image.id}`}
+                          fill
+                          className="object-cover"
+                        />
+                        <motion.button
+                          className="absolute bottom-3 right-3 p-2 bg-white rounded-full shadow-md"
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleLike(image.id)}
+                          disabled={isLiking}
+                          aria-label={`Like image ${image.id}`}
+                        >
+                          <Heart className={`w-5 h-5 ${likedStates[image.id] ? 'text-red-500 fill-red-500' : 'text-gray-400'
+                            }`} />
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="shorts"
+              className="w-full h-[70vh] aspect-[9/16] relative"
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              onDragEnd={handleDragEnd}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <video
+                key={videos[currentIndex]?.id}
+                src={videos[currentIndex]?.url}
+                className="w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50" />
+              <div className="absolute right-4 bottom-20 flex flex-col items-center gap-6">
+                <motion.button
+                  className="p-3 bg-white rounded-full shadow-lg"
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleLike(videos[currentIndex]?.id)}
+                  aria-label={`Like video ${videos[currentIndex]?.id}`}
+                >
+                  <Heart className={`w-6 h-6 ${likedStates[videos[currentIndex]?.id] ? 'text-red-500 fill-red-500' : 'text-gray-600'}`} />
+                </motion.button>
+                <div className="flex flex-col gap-4">
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handlePrevious}
+                    className="p-2 bg-white/20 rounded-full backdrop-blur-sm"
+                    aria-label="Previous video"
+                  >
+                    <ChevronUp className="w-6 h-6 text-white" />
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleNext}
+                    className="p-2 bg-white/20 rounded-full backdrop-blur-sm"
+                    aria-label="Next video"
+                  >
+                    <ChevronDown className="w-6 h-6 text-white" />
                   </motion.button>
                 </div>
-              </motion.div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        ) : (
-          <motion.div
-            key="shorts"
-            className="w-full h-[75vh]" 
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            onDragEnd={handleDragEnd}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <video
-              src={videos[currentIndex]?.url}
-              className="w-full h-full rounded-2xl object-cover"
-              autoPlay
-              loop
-              muted
-            />
-            <div className="absolute right-4 bottom-20 flex flex-col gap-4">
-              <motion.button
-                className="p-3 bg-white rounded-full"
-                whileTap={{ scale: 0.9 }}
-                onClick={()=>handleLike("1")}
-              >
-                <Heart className={`w-6 h-6 ${isLiking ? 'text-red-500 fill-red-500' : 'text-gray-600'}`} />
-              </motion.button>
-              <div className="flex flex-col gap-2">
-                <ChevronUp className="w-6 h-6 text-white" />
-                <ChevronDown className="w-6 h-6 text-white" />
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <div className="w-full mt-6 px-4 absolute bottom-5">
-        <div className="flex rounded-lg bg-purple-50/60 p-2 gap-2 shadow-inner">
-          {mainCategories.map((category) => (
-            <motion.button
-              key={category.name}
-              className={`flex-1 py-3 rounded-md flex items-center justify-center gap-2 text-sm transition-all
-                ${selectedMainCategory === category.name
-                  ? 'bg-purple-200 text-purple-800 shadow-md'
-                  : 'text-gray-600 hover:bg-purple-100'}`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setSelectedMainCategory(category.name)}
-            >
-              <span className="text-lg">{category.icon}</span>
-              <span className="font-medium hidden sm:inline">{category.label}</span>
-            </motion.button>
-          ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <div className="p-6 pb-4">
+          <div className="flex rounded-lg bg-gray-100 p-1 gap-2 mb-6">
+            {mainCategories.map((category) => (
+              <motion.button
+                key={category.name}
+                className={`flex-1 py-2 rounded-md flex items-center justify-center gap-2 text-sm transition-all
+                  ${selectedMainCategory === category.name
+                    ? 'bg-white text-purple-600 shadow-md'
+                    : 'text-gray-600 hover:bg-gray-200'}`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedMainCategory(category.name)}
+              >
+                {category.icon}
+                <span className="font-medium">{category.label}</span>
+              </motion.button>
+            ))}
+          </div>
         </div>
       </div>
+      {error && <div className="mt-4 text-red-500">{error}</div>}
     </div>
   )
 }
+

@@ -4,7 +4,17 @@ import prisma from '@/lib/db'
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const userId = searchParams.get('userId')
+    const walletAddress = searchParams.get('walletAddress');
+    console.log('walletAddress:', walletAddress)
+
+    if(walletAddress === null) return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 });
+
+    const user = await prisma.user.findUnique({
+      where: { walletAddress }
+    })
+    const userId = user?.id;
+
+    console.log('userId:', userId)
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
@@ -31,7 +41,7 @@ export async function GET(req: Request) {
               }
             }
           },
-          take: 2 // Get 2 images for comparison
+          take: 2
         }
       }
     })
@@ -39,6 +49,8 @@ export async function GET(req: Request) {
     if (!labellingJob) {
       return NextResponse.json({ message: 'No more labelling jobs available' }, { status: 404 })
     }
+
+    console.log(labellingJob)
 
     return NextResponse.json(labellingJob)
   } catch (error) {

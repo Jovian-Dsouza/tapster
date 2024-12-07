@@ -52,6 +52,7 @@ export default function UploadPage() {
           });
   
           const result = await response.json();
+          console.log(result);
           blobs.push(result.alreadyCertified.blobId);
   
           if (!response.ok) {

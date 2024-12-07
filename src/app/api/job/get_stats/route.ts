@@ -3,8 +3,6 @@ import prisma from '@/lib/db'
 
 export async function GET(request: Request) {
 
-    console.log("Request: ", request);
-
   const { searchParams } = new URL(request.url)
   const creatorAddress = searchParams.get('address')
 
