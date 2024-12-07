@@ -12,9 +12,11 @@
 # next.js
 /.next/
 /out/
-
+shorts
 # production
 /build
+image*.png
+Screenshot*.png
 
 # misc
 .DS_Store

@@ -12,6 +12,7 @@ import Link from 'next/link';
 
 
 interface MobileNavbarProps {
+    isConnected: boolean;
 
 }
 
