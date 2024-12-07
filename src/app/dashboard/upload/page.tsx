@@ -43,6 +43,7 @@ export default function UploadPage() {
   })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('values:', values);
     try{
       setIsLoading(true);
       const files = values.data as FileList;

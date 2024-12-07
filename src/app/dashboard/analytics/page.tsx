@@ -1,57 +1,71 @@
+'use client'
+import AnalyticsContent from '@/components/analytics-content'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useEffect, useState } from 'react';
+import { useWallet } from '@suiet/wallet-kit';
+
+
 
 export default function AnalyticsPage() {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const wallet = useWallet();
+  useEffect(()=>{
+    async function fetchData(){
+      if(wallet.account?.address){
+        try{
+          const response = await fetch(`/api/user/analytics?walletAddress=${wallet.account?.address}`);
+          // @ts-ignore
+          const data = await response.json();
+          setData(data);
+          setIsLoading(false);
+          console.log("Data asdad", data);
+          return data;
+        }catch(error){
+          console.error('Error fetching analytics data',error);
+          return null;
+        }
+      }
+    }
+    fetchData()
+  },[wallet.connected, wallet.account?.address])
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Analytics</h1>
-      
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Labelling Progress by Dataset</CardTitle>
-            <CardDescription>Percentage of completion for each dataset</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { name: "Product Images", progress: 75 },
-              { name: "Customer Reviews", progress: 90 },
-              { name: "Inventory Images", progress: 40 },
-            ].map((dataset) => (
-              <div key={dataset.name} className="space-y-2">
-                <div className="flex justify-between">
-                  <span>{dataset.name}</span>
-                  <span>{dataset.progress}%</span>
-                </div>
-                <Progress value={dataset.progress} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Labeler Performance</CardTitle>
-            <CardDescription>Top performing labelers this month</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-4">
-              {[
-                { name: "Alice Smith", count: 1500 },
-                { name: "Bob Johnson", count: 1350 },
-                { name: "Carol Williams", count: 1200 },
-                { name: "David Brown", count: 1100 },
-                { name: "Eva Davis", count: 1000 },
-              ].map((labeler, index) => (
-                <li key={labeler.name} className="flex justify-between items-center">
-                  <span>{index + 1}. {labeler.name}</span>
-                  <span className="font-semibold">{labeler.count} labels</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+      {(isLoading || !data)? <AnalyticsSkeletons /> : <AnalyticsContent data={data} />}
+    </div>
+  )
+}
+
+function AnalyticsSkeletons() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-2 w-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[200px] w-full" />
+        </CardContent>
+      </Card>
     </div>
   )
 }
