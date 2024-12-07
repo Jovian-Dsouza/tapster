@@ -1,19 +1,34 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import JSZip from 'jszip'
-import axios from 'axios'
 
 export async function POST(req: Request) {
   try {
     const { publisher,name, type, reward, data } = await req.json();
 
-    console.log('walletAddress:', publisher)
-    console.log('name:', name)
-    console.log('type:', type)
-    console.log('reward:', reward)
-    console.log('data:', data)
+    const creator = await prisma.user.findFirst({
+      where: {
+        walletAddress: publisher
+      }
+    })
 
-    return NextResponse.json({result:"labellingJob"})
+    if(creator){
+      const labellingJob = await prisma.labellingJob.create({
+        data: {
+          title:name,
+          description:'TODO',
+          reward,
+          creator: { connect: { id: creator.id } },
+          images: {
+            create: data.map((url:any) => ({ url }))
+          }
+        }
+      })
+      return NextResponse.json(labellingJob);
+    }
+    else{
+      return NextResponse.json({ error: 'User not found' }, { status
+      : 404 })
+    }
   } catch (error) {
     console.error('Error creating labelling job:', error)
     return NextResponse.json({ error: 'Error creating labelling job' }, { status: 500 })
