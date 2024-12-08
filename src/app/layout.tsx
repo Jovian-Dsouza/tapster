@@ -5,6 +5,7 @@ import { Poppins } from 'next/font/google';
 import "./globals.css";
 import '@suiet/wallet-kit/style.css';
 import WalletProviderWrapper from '@/components/wallet-provider-wrapper';
+import { OktoWalletProvider } from "@/components/OktoWalletProvider";
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -21,7 +22,9 @@ export default function RootLayout({
     <html lang="en" className={`${poppins.variable} font-sans`}>
       <body className="h-screen">
         <WalletProviderWrapper>
-          {children}
+          <OktoWalletProvider>
+            {children}
+          </OktoWalletProvider>
         </WalletProviderWrapper>
       </body>
     </html>

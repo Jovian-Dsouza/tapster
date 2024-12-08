@@ -1,6 +1,9 @@
+'use client';
 import { EAS, SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { useMemo } from "react";
 import { ethers } from "ethers";
+import { OktoContextType } from "okto-sdk-react";
+import { useOkto } from "okto-sdk-react";
 
 const EAS_CONTRACT_ADDRESS = "0xC2679fBD37d54388Ce493F1DB75320D236e1815e";
 const SCHEMA_UID = "0x5edb38d23dfac31274ac230e73868bafde883bfa8572df62d5f1fbb713659bf4";
@@ -12,6 +15,7 @@ interface AttestationData {
 }
 
 export function useEASAttestation() {
+    const { executeRawTransactionWithJobStatus } = useOkto() as OktoContextType;
     const provider = useMemo(() => 
         new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_PROVIDER_URL),
         []
@@ -33,7 +37,35 @@ export function useEASAttestation() {
         []
     );
 
+    const createAttestationWithOkto = async (data: AttestationData) => {
+        try {
+            const requestData = {
+                network_name: "POLYGON_TESTNET",
+                transaction: {
+                    from: signer.address,
+                    to: EAS_CONTRACT_ADDRESS,
+                    data,
+                    value: "0x100000",
+                },
+            }
+    
+            executeRawTransactionWithJobStatus(requestData)
+                    .then((result) => {
+                        console.log(result)
+                    })
+                    .catch((error) => {
+                        console.error(`error:`, error);
+                    });
+        } catch (error) {
+            console.error("Error creating attestation:", error);
+            throw error;
+        }
+    }
+
     const createAttestation = async (data: AttestationData) => {
+        if(process.env.NEXT_PUBLIC_ATTESTATION_TYPE === "polygon"){
+            return createAttestationWithOkto(data);
+        }
         try {
             const encodedData = schemaEncoder.encodeData([
                 { name: "jobId", value: data.jobId, type: "string" },
@@ -61,30 +93,3 @@ export function useEASAttestation() {
 
     return { createAttestation };
 }
-
-// Example usage:
-/*
-function MyComponent() {
-    const { signer } = useWallet(); // or however you get your signer
-    const { createAttestation } = useEASAttestation(signer);
-
-    const handleAttestation = async () => {
-        try {
-            const attestationUID = await createAttestation({
-                jobId: "job123",
-                winnerId: "winner456",
-                loserId: "loser789"
-            });
-            console.log("New attestation UID:", attestationUID);
-        } catch (error) {
-            console.error("Failed to create attestation:", error);
-        }
-    };
-
-    return (
-        <button onClick={handleAttestation}>
-            Create Attestation
-        </button>
-    );
-}
-*/ 
