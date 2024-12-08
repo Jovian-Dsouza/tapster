@@ -147,7 +147,7 @@ export default function ShortsPage() {
             className="h-full w-full object-cover"
             autoPlay
             loop
-            muted
+            controls
             playsInline
           />
 
