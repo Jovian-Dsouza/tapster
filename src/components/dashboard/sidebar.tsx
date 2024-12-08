@@ -4,8 +4,13 @@ import { Home, Upload, BarChart, Settings, LogOut } from 'lucide-react'
 export function Sidebar() {
   return (
     <div className="flex flex-col h-full w-64 bg-white dark:bg-gray-800 border-r">
-      <nav className="flex-1 overflow-y-auto mt-8">
-        <ul className="p-4 space-y-2">
+      <nav className="flex-1 overflow-y-auto mt-8 text-center">
+        <Link href={"/"} className="cursor-pointer">
+          <h1 className="text-2xl md:text-4xl font-bold">
+            TapMaster
+          </h1>
+        </Link>
+        <ul className="p-6 space-y-2 pt-12">
           <li>
             <Link href="/dashboard" className="flex items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
               <Home className="mr-3 h-5 w-5" />

@@ -13,7 +13,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="h-screen">
         <WalletProviderWrapper>
-          <Navbar />
+          
           {children}
         </WalletProviderWrapper>
       </body>
