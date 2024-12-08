@@ -42,7 +42,7 @@ export function Hero() {
       <div className="flex flex-col md:flex-row items-center justify-between">
         <div className="w-full md:w-1/2 min-w-1/2 p-10">
           <Button className="cursor-pointer relative z-10 hover:bg-black/90 border border-transparent text-sm md:text-sm transition font-medium duration-200 rounded-full px-4 py-2 justify-center shadow-[0px_-1px_0px_0px_#FFFFFF40_inset,_0px_1px_0px_0px_#FFFFFF40_inset] flex space-x-2 items-center bg-amber-400/10 border-none text-amber-400">
-            <WalrusIcon className="w-5 h-5" />
+            <WalrusIcon />
             <span>Powered by Walrus</span>
           </Button>
           <h1 className="text-left tracking-tight text-black dark:text-amber-50 text-4xl md:text-4xl lg:text-6xl font-bold max-w-6xl mt-0 relative z-10 py-6">

@@ -108,26 +108,26 @@ export default function PlayPage() {
 
       await handleCreateAttestation(imagePairs.jobId, imageId, otherImage.id)
 
-      // const response = await fetch('/api/user/submit_job', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     walletAddress: wallet.account?.address,
-      //     labellingJobId: imagePairs.jobId,
-      //     winnerId: imageId,
-      //     loserId: otherImage.id,
-      //   }),
-      // })
-      // if (!response.ok) {
-      //   throw new Error('Failed to submit comparison')
-      // }
-      // setLikedStates(prev => ({ ...prev, [imageId]: true }))
-      // console.log("Liked image", imageId,"fetch new images called")
-      // if (wallet.account?.address) {
-      //   await fetchImages(wallet.account.address)
-      // }
+      const response = await fetch('/api/user/submit_job', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: wallet.account?.address,
+          labellingJobId: imagePairs.jobId,
+          winnerId: imageId,
+          loserId: otherImage.id,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to submit comparison')
+      }
+      setLikedStates(prev => ({ ...prev, [imageId]: true }))
+      console.log("Liked image", imageId,"fetch new images called")
+      if (wallet.account?.address) {
+        await fetchImages(wallet.account.address)
+      }
     } catch (err) {
       setError('Failed to submit comparison. Please try again.')
     } finally {

@@ -46,7 +46,7 @@ export default function Navbar({ className }: NavbarProps) {
             >
                 <Link href="/">
                     <h1 className="text-xl md:text-2xl font-bold">
-                        TapMaster
+                        Tapster
                     </h1>
                 </Link>
                 <div className="hidden md:flex items-center gap-2">

@@ -7,7 +7,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto mt-8 text-center">
         <Link href={"/"} className="cursor-pointer">
           <h1 className="text-2xl md:text-4xl font-bold">
-            TapMaster
+            Tapster
           </h1>
         </Link>
         <ul className="p-6 space-y-2 pt-12">

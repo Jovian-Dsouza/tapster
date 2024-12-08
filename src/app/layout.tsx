@@ -1,8 +1,16 @@
 'use client'
+
 import Navbar from "@/components/navbar";
+import { Poppins } from 'next/font/google';
 import "./globals.css";
 import '@suiet/wallet-kit/style.css';
 import WalletProviderWrapper from '@/components/wallet-provider-wrapper';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '900'],
+  variable: '--font-sans',
+});
 
 export default function RootLayout({
   children,
@@ -10,13 +18,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${poppins.variable} font-sans`}>
       <body className="h-screen">
         <WalletProviderWrapper>
-          
           {children}
         </WalletProviderWrapper>
       </body>
     </html>
   );
 }
+
