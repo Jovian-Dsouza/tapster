@@ -3,6 +3,7 @@ import Navbar from "@/components/navbar";
 import "./globals.css";
 import '@suiet/wallet-kit/style.css';
 import WalletProviderWrapper from '@/components/wallet-provider-wrapper';
+import { OktoWalletProvider } from "@/components/OktoWalletProvider";
 
 export default function RootLayout({
   children,
@@ -13,8 +14,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="h-screen">
         <WalletProviderWrapper>
-          
-          {children}
+          <OktoWalletProvider>
+            {children}
+          </OktoWalletProvider>
         </WalletProviderWrapper>
       </body>
     </html>

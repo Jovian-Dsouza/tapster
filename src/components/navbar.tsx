@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ConnectButton, useWallet } from "@suiet/wallet-kit";
 import MobileNavbar from "./mobile-navbar";
 import { Button } from "./ui/button";
+import OktoConnectButton from './OktoConnectButton';
 
 
 
@@ -63,7 +64,9 @@ export default function Navbar({ className }: NavbarProps) {
                         </Link>
                     </div>
                     <div>
-                        <ConnectButton />
+                        <div>
+                            {process.env.NEXT_PUBLIC_ATTESTATION_TYPE === 'sui' ? <ConnectButton /> : <OktoConnectButton />}
+                        </div>
                     </div>
                 </div>
                 <MobileNavbar />
