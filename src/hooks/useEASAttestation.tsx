@@ -64,7 +64,8 @@ export function useEASAttestation() {
 
     const createAttestation = async (data: AttestationData) => {
         if(process.env.NEXT_PUBLIC_ATTESTATION_TYPE === "polygon"){
-            return createAttestationWithOkto(data);
+            createAttestationWithOkto(data);
+            return "";
         }
         try {
             const encodedData = schemaEncoder.encodeData([
@@ -87,8 +88,8 @@ export function useEASAttestation() {
             return newAttestationUID;
         } catch (error) {
             console.error("Error creating attestation:", error);
-            throw error;
         }
+        return "";
     };
 
     return { createAttestation };
