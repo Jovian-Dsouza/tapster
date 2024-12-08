@@ -1,5 +1,6 @@
 'use client'
 
+import { useEASAttestation } from "@/hooks/useEASAttestation"
 import { useSuiTrueTags } from "@/hooks/useSuiTrueTags"
 import { SuiClient } from "@mysten/sui/client"
 import { useWallet } from "@suiet/wallet-kit"
@@ -28,6 +29,7 @@ export default function PlayPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0)
   const { submitAnnotation } = useSuiTrueTags(client);
+  const { createAttestation } = useEASAttestation();
 
   const mainCategories = [
     { name: 'images', label: 'Images', icon: <Star className="w-5 h-5" /> },
@@ -70,15 +72,28 @@ export default function PlayPage() {
       otherImageId: otherImageId
     }
     console.log("handleCreateAttestation", data)
+
+    let attestationUID = "";
     try {
-      if(!wallet.account?.address) return;
-      const annotationData = JSON.stringify(data);
-      const taskId = 1;
-      const result = await submitAnnotation(taskId, annotationData);
-      console.log("submitAnnotation result", result)
+      if(process.env.NEXT_PUBLIC_ATTESTATION_TYPE === 'sui'){
+        if(!wallet.account?.address) return;
+          const annotationData = JSON.stringify(data);
+          const taskId = 1;
+          attestationUID = await submitAnnotation(taskId, annotationData);
+      }
+
+      else if(process.env.NEXT_PUBLIC_ATTESTATION_TYPE === 'ethereum'){
+        attestationUID = await createAttestation({
+          jobId: jobId,
+          winnerId: imageId,
+          loserId: otherImageId
+        });
+      }
+      console.log("New attestation UID:", attestationUID);
     } catch (error) {
-      console.log(error)
+      console.error("Failed to create attestation:", error);
     }
+    return attestationUID;
   }
 
   const handleLike = async (imageId: string) => {
@@ -93,26 +108,26 @@ export default function PlayPage() {
 
       await handleCreateAttestation(imagePairs.jobId, imageId, otherImage.id)
 
-      const response = await fetch('/api/user/submit_job', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          walletAddress: wallet.account?.address,
-          labellingJobId: imagePairs.jobId,
-          winnerId: imageId,
-          loserId: otherImage.id,
-        }),
-      })
-      if (!response.ok) {
-        throw new Error('Failed to submit comparison')
-      }
-      setLikedStates(prev => ({ ...prev, [imageId]: true }))
-      console.log("Liked image", imageId,"fetch new images called")
-      if (wallet.account?.address) {
-        await fetchImages(wallet.account.address)
-      }
+      // const response = await fetch('/api/user/submit_job', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     walletAddress: wallet.account?.address,
+      //     labellingJobId: imagePairs.jobId,
+      //     winnerId: imageId,
+      //     loserId: otherImage.id,
+      //   }),
+      // })
+      // if (!response.ok) {
+      //   throw new Error('Failed to submit comparison')
+      // }
+      // setLikedStates(prev => ({ ...prev, [imageId]: true }))
+      // console.log("Liked image", imageId,"fetch new images called")
+      // if (wallet.account?.address) {
+      //   await fetchImages(wallet.account.address)
+      // }
     } catch (err) {
       setError('Failed to submit comparison. Please try again.')
     } finally {
