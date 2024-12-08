@@ -23,18 +23,16 @@ interface NavButtonProps {
 const NavButton: React.FC<NavButtonProps> = ({ icon, label, onClick, isActive }) => (
   <motion.button
     onClick={onClick}
-    className={`flex flex-col items-center transition-all duration-300 ${
-      isActive ? 'text-white' : 'text-gray-400'
-    }`}
+    className={`flex flex-col items-center transition-all duration-300 ${isActive ? 'text-white' : 'text-gray-400'
+      }`}
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.95 }}
   >
     <motion.div
-      className={`p-2 rounded-full ${
-        isActive
-          ? 'bg-white text-black'
-          : 'bg-gray-800'
-      }`}
+      className={`p-2 rounded-full ${isActive
+        ? 'bg-white text-black'
+        : 'bg-gray-800'
+        }`}
       animate={{ y: isActive ? -8 : 0 }}
     >
       {icon}
@@ -49,22 +47,51 @@ export default function ShortsPage() {
   const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({})
   const [isDoubleTapLiking, setIsDoubleTapLiking] = useState(false)
 
-  // Sample videos - replace with actual API call
   const videos: Video[] = [
     {
       id: 'v1',
-      url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      title: 'Big Buck Bunny'
+      url: '/shorts/videoa.mp4',
+      title: 'Video Play'
     },
     {
-      id: 'v2', 
-      url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-      title: 'Elephant Dreams'
+      id: 'v2',
+      url: '/shorts/videop.mp4',
+      title: 'Video Play 2'
     },
     {
       id: 'v3',
-      url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      title: 'For Bigger Blazes'
+      url: '/shorts/videopl.mp4',
+      title: 'Video Play 3'
+    },
+    {
+      id: 'v4',
+      url: '/shorts/videopla.mp4',
+      title: 'Video Play 3'
+    },
+    {
+      id: 'v5',
+      url: '/shorts/videoplay.mp4',
+      title: 'Video Play 5'
+    },
+    {
+      id: 'v6',
+      url: '/shorts/videoplayb.mp4',
+      title: 'Video Play 6'
+    },
+    {
+      id: 'v7',
+      url: '/shorts/videoplaybac.mp4',
+      title: 'Video Play 7'
+    },
+    {
+      id: 'v8',
+      url: '/shorts/videoplayback.mp4',
+      title: 'Video Play 8'
+    },
+    {
+      id: 'v9',
+      url: '/shorts/videoplayba.mp4',
+      title: 'Video Play 9'
     }
   ]
 
@@ -81,10 +108,10 @@ export default function ShortsPage() {
 
     setIsDoubleTapLiking(true)
     try {
-      setLikedVideos(prev => ({...prev, [videoId]: true}))
-      
+      setLikedVideos(prev => ({ ...prev, [videoId]: true }))
+
       setTimeout(() => {
-        setLikedVideos(prev => ({...prev, [videoId]: false}))
+        setLikedVideos(prev => ({ ...prev, [videoId]: false }))
       }, 1000)
     } finally {
       setIsDoubleTapLiking(false)
@@ -105,7 +132,7 @@ export default function ShortsPage() {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div 
+        <motion.div
           key={currentIndex}
           className="relative h-full w-full"
           drag="y"
@@ -123,8 +150,8 @@ export default function ShortsPage() {
             muted
             playsInline
           />
-          
-          <div 
+
+          <div
             className="absolute inset-0 z-10"
             onDoubleClick={() => handleDoubleTap(videos[currentIndex].id)}
           >
@@ -164,28 +191,28 @@ export default function ShortsPage() {
 
       {/* Floating Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
-        <motion.div 
+        <motion.div
           className="bg-black shadow-lg px-4 py-3 w-full"
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 20 }}
         >
           <div className="flex items-center justify-around max-w-xl mx-auto">
-            <NavButton 
-              icon={<Sparkles className="w-6 h-6" />} 
-              label="Picks" 
+            <NavButton
+              icon={<Sparkles className="w-6 h-6" />}
+              label="Picks"
               onClick={() => handleNavigation('/play')}
               isActive={false}
             />
-            <NavButton 
-              icon={<Film className="w-6 h-6" />} 
-              label="Shorts" 
+            <NavButton
+              icon={<Film className="w-6 h-6" />}
+              label="Shorts"
               onClick={() => handleNavigation('/shorts')}
               isActive={true}
             />
-            <NavButton 
-              icon={<User className="w-6 h-6" />} 
-              label="Me" 
+            <NavButton
+              icon={<User className="w-6 h-6" />}
+              label="Me"
               onClick={() => handleNavigation('/me')}
               isActive={false}
             />
