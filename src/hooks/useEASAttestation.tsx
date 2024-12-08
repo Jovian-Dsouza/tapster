@@ -63,6 +63,9 @@ export function useEASAttestation() {
     }
 
     const createAttestation = async (data: AttestationData) => {
+        if(process.env.NEXT_PUBLIC_ATTESTATION_TYPE === "polygon"){
+            return createAttestationWithOkto(data);
+        }
         try {
             const encodedData = schemaEncoder.encodeData([
                 { name: "jobId", value: data.jobId, type: "string" },
